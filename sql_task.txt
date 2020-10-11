@@ -1,0 +1,63 @@
+/*
+ * TASK: Get all cars with a red color and assembled in the United Kingdom or France ordered by year and price (price has higher priority)
+ * Before any refactoring of the DB structure
+ * NOTE: The red/RED text forms a part of the title text, meaning that color description is inclusive of the title text. (This is not good)
+ * There are several options that we could use to get the color INSTR and LIKE are among them but the efficient one is LIKE,
+ * For even more efficiency, we could go for Full-Text Search, However, this will require proper indexing of the respective table
+*/
+
+# LIKE is case insensitive, so it will work for all type cases of the search words {Red, United Kingdom, and Frace}
+SELECT * FROM cars WHERE title LIKE '%RED%' AND (title LIKE '%United Kingdom%' OR title LIKE '%France%');
+
+/*
+ * TASK: Add proper indexes on fields and explain why you added them if any
+ * Given the nature of this table as it is now, the first index we can rely on is the Primary Key Index which in this case is on column (Id)
+ * Since the main goal of indexing is to improve performance when searching for specific datum, it is logical to index the title, type, engine_capacity, and the year. Because we are more like to 
+ * search for data using these columns as the points of reference.
+ * We can also use a multi-column index for some of these columns just to increase efficiency when Data is searched using Multiple columns  filters
+*/
+#It is important to index title because is more likely to be queried the most
+#NOTE: The structure of this column is however not so good it needs refactoring
+# Indexing the title column will allow us to use Full-Text Search and using substring filters on the title text
+CREATE INDEX `title` ON cars (`title`);
+
+# We are more likely to fetch data by year so it is logical to have `year` index
+CREATE INDEX `year` ON cars (`year`);
+
+#It is logical to have type Index since data could be frequently searched on type
+#This is a case of the multi-column index where the type column being the first is also indexed independently
+CREATE INDEX `type_engine_year` ON cars (`type`,`engine_capacity`, `year`);
+
+# REMARKS
+# It is important to know that,  creating and managing indices is not a one-time task, indices are a living part of database and should be improved and constantly updated base on the use cases
+# It is important for a system to be monitored to determine the types of queries that are frequently executed and to update indices accordingly
+# A big factor to consider when dealing with indices is that they take memory space so it is important to plan them accordingly
+
+
+/*
+ * STRUCTURAL ISSUES!
+ * Data presented in this sample indicates that there is so much information that needs to be properly organized and normalized in order to increase the efficiency of this DB.
+ * As of now a few categorical items are included within the title, this affects the performance of the DB especially when searching.
+ * Things Like the color of the car, and the assembly locations are such useful attributes of this data that needs to be columned and indexed
+*/
+
+#Table could be refactored to this
+CREATE TABLE `cars` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `color` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `assembled` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `photo` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `price` int DEFAULT NULL,
+  `engine_capacity` int DEFAULT NULL,
+  `year` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE INDEX `title` ON cars (`title`);
+CREATE INDEX `year` ON cars (`year`);
+CREATE INDEX `engine_capacity` ON cars (`engine_capacity`);
+CREATE INDEX `car_index` ON cars (`type`,`color`,`assembled`,`engine_capacity`, `year`);
+
+#NOTE: this Table can be normalized to break it even further for a better organization and more efficiency
